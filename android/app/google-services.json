@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "745547133225",
+    "project_id": "jobnoti-4c078",
+    "storage_bucket": "jobnoti-4c078.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:745547133225:android:ef6a65708c9fa00d230738",
+        "android_client_info": {
+          "package_name": "com.jobnoti.jobnoti"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_t9SveVarbffWrH_5bkOqczPrLm3HFzU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
