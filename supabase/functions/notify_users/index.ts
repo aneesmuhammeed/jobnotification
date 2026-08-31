@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { JWT } from "https://esm.sh/google-auth-library@8.7.0";
+import { JWT } from "https://npm.esm.sh/google-auth-library@8.7.0";
 
 // Interface for Webhook payload (triggered by INSERT on jobs table)
 interface WebhookPayload {
@@ -52,7 +52,7 @@ serve(async (req) => {
     // Since this is a newly inserted job, NO user has applied for it yet.
     // However, if this was a cron job sending daily digests, we would do:
     // .not('id', 'in', `(select user_id from applications where job_id = '${job.id}')`)
-    
+
     // For MVP Webhook trigger (immediately on Job Insert):
     // All these users are eligible.
     const tokens = users.map((u) => u.fcm_token).filter(Boolean);
