@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { JWT } from "https://npm.esm.sh/google-auth-library@8.7.0";
+import { JWT } from "https://esm.sh/google-auth-library@8.7.0";
 
 // Interface for Webhook payload (triggered by INSERT on jobs table)
 interface WebhookPayload {
