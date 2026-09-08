@@ -21,4 +21,9 @@ class AppConstants {
 
   // Local document storage directory name
   static const String documentsDir = 'jobnoti_documents';
+
+  // Telegram Cloud Storage settings
+  // Replace these with your actual Bot Token and Group Chat ID
+  static const String telegramBotToken = '8107955995:AAGoc6EAjGRsWbXqDqAsdwX25hXd_zttw08';
+  static const String telegramChatId = '-1003741865575';
 }

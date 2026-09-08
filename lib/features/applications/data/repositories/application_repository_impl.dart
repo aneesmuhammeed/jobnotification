@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:jobnoti/core/services/telegram_service.dart';
 import 'package:dartz/dartz.dart';
 import 'package:jobnoti/core/error/exceptions.dart';
 import 'package:jobnoti/core/error/failures.dart';
@@ -9,8 +11,12 @@ import 'package:jobnoti/features/applications/domain/repositories/application_re
 /// Concrete implementation of [ApplicationRepository].
 class ApplicationRepositoryImpl implements ApplicationRepository {
   final ApplicationRemoteDataSource remoteDataSource;
+  final TelegramService telegramService;
 
-  ApplicationRepositoryImpl({required this.remoteDataSource});
+  ApplicationRepositoryImpl({
+    required this.remoteDataSource,
+    required this.telegramService,
+  });
 
   @override
   Future<Either<Failure, ApplicationEntity>> markAsApplied({
@@ -20,12 +26,23 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
     String? documentName,
   }) async {
     try {
+      String? finalDocumentPath = documentPath;
+
+      // If a document was provided, upload it to Telegram first
+      if (documentPath != null && documentName != null) {
+        final file = File(documentPath);
+        if (await file.exists()) {
+          final fileId = await telegramService.uploadDocument(file, documentName);
+          finalDocumentPath = fileId; // Store the file_id instead of local path!
+        }
+      }
+
       final model = ApplicationModel(
         id: '',
         userId: userId,
         jobId: jobId,
         appliedAt: DateTime.now(),
-        documentPath: documentPath,
+        documentPath: finalDocumentPath,
         documentName: documentName,
       );
       final application = await remoteDataSource.markAsApplied(model.toInsertJson());
@@ -34,6 +51,8 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
       return Left(DuplicateFailure(e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -60,6 +79,16 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
       return Right(application);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> downloadDocument(String fileId, String documentName) async {
+    try {
+      final localPath = await telegramService.downloadDocument(fileId, documentName);
+      return Right(localPath);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

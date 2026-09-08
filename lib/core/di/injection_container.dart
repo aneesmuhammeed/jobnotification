@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jobnoti/core/network/supabase_client_wrapper.dart';
 import 'package:jobnoti/core/services/notification_service.dart';
+import 'package:jobnoti/core/services/telegram_service.dart';
 
 // Features - Auth
 import 'package:jobnoti/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -33,6 +34,7 @@ import 'package:jobnoti/features/applications/domain/repositories/application_re
 import 'package:jobnoti/features/applications/domain/usecases/mark_job_as_applied.dart';
 import 'package:jobnoti/features/applications/domain/usecases/get_applications.dart';
 import 'package:jobnoti/features/applications/domain/usecases/get_application_by_job.dart';
+import 'package:jobnoti/features/applications/domain/usecases/download_document.dart';
 import 'package:jobnoti/features/applications/presentation/bloc/application_bloc.dart';
 
 final sl = GetIt.instance;
@@ -44,6 +46,7 @@ Future<void> initDependencies() async {
     () => SupabaseClientWrapper.client,
   );
   sl.registerLazySingleton(() => NotificationService());
+  sl.registerLazySingleton(() => TelegramService());
 
   // ─── Auth Feature ─────────────────────────────────────
   // Data sources
@@ -116,13 +119,17 @@ Future<void> initDependencies() async {
 
   // Repositories
   sl.registerLazySingleton<ApplicationRepository>(
-    () => ApplicationRepositoryImpl(remoteDataSource: sl()),
+    () => ApplicationRepositoryImpl(
+      remoteDataSource: sl(),
+      telegramService: sl(),
+    ),
   );
 
   // Use cases
   sl.registerLazySingleton(() => MarkJobAsApplied(sl()));
   sl.registerLazySingleton(() => GetApplications(sl()));
   sl.registerLazySingleton(() => GetApplicationByJob(sl()));
+  sl.registerLazySingleton(() => DownloadDocument(sl()));
 
   // BLoC
   sl.registerFactory(
@@ -130,6 +137,7 @@ Future<void> initDependencies() async {
       markJobAsApplied: sl(),
       getApplications: sl(),
       getApplicationByJob: sl(),
+      downloadDocument: sl(),
     ),
   );
 }

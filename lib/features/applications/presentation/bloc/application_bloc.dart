@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jobnoti/features/applications/domain/usecases/mark_job_as_applied.dart';
 import 'package:jobnoti/features/applications/domain/usecases/get_applications.dart';
 import 'package:jobnoti/features/applications/domain/usecases/get_application_by_job.dart';
+import 'package:jobnoti/features/applications/domain/usecases/download_document.dart';
 import 'package:jobnoti/features/applications/presentation/bloc/application_event_state.dart';
 
 /// Application BLoC — manages application tracking state.
@@ -9,15 +10,18 @@ class ApplicationBloc extends Bloc<ApplicationEvent, ApplicationState> {
   final MarkJobAsApplied markJobAsApplied;
   final GetApplications getApplications;
   final GetApplicationByJob getApplicationByJob;
+  final DownloadDocument downloadDocument;
 
   ApplicationBloc({
     required this.markJobAsApplied,
     required this.getApplications,
     required this.getApplicationByJob,
+    required this.downloadDocument,
   }) : super(const ApplicationInitial()) {
     on<MarkAsAppliedRequested>(_onMarkAsApplied);
     on<LoadApplicationsRequested>(_onLoadApplications);
     on<CheckApplicationStatusRequested>(_onCheckApplicationStatus);
+    on<DownloadDocumentRequested>(_onDownloadDocument);
   }
 
   Future<void> _onMarkAsApplied(
@@ -63,6 +67,20 @@ class ApplicationBloc extends Bloc<ApplicationEvent, ApplicationState> {
     result.fold(
       (failure) => emit(ApplicationError(failure.message)),
       (application) => emit(ApplicationStatusChecked(application)),
+    );
+  }
+
+  Future<void> _onDownloadDocument(
+    DownloadDocumentRequested event,
+    Emitter<ApplicationState> emit,
+  ) async {
+    emit(const DocumentDownloadInProgress());
+    final result = await downloadDocument(
+      DownloadDocumentParams(fileId: event.fileId, documentName: event.documentName),
+    );
+    result.fold(
+      (failure) => emit(ApplicationError(failure.message)),
+      (localPath) => emit(DocumentDownloaded(localPath)),
     );
   }
 }

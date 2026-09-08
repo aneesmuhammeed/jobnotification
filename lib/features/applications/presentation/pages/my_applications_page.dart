@@ -22,6 +22,8 @@ class MyApplicationsPage extends StatefulWidget {
 }
 
 class _MyApplicationsPageState extends State<MyApplicationsPage> {
+  List<ApplicationEntity> _applications = [];
+
   @override
   void initState() {
     super.initState();
@@ -37,20 +39,13 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     }
   }
 
-  Future<void> _openDocument(String path) async {
-    final file = File(path);
-    if (!await file.exists()) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Document unavailable. Resumes are saved locally on the device you applied from. If you applied on Chrome or another phone, the file is not on this device.'),
-          backgroundColor: AppColors.warning,
-          duration: Duration(seconds: 4),
-        ),
-      );
-      return;
-    }
-    await OpenFilex.open(path);
+  void _openDocument(String fileId, String documentName) {
+    context.read<ApplicationBloc>().add(
+          DownloadDocumentRequested(
+            fileId: fileId,
+            documentName: documentName,
+          ),
+        );
   }
 
   @override
@@ -78,11 +73,6 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               // Applications list
               BlocBuilder<ApplicationBloc, ApplicationState>(
                 builder: (context, state) {
-                  if (state is ApplicationLoading) {
-                    return const SliverFillRemaining(
-                      child: LoadingState(),
-                    );
-                  }
 
                   if (state is ApplicationError) {
                     return SliverFillRemaining(
@@ -93,39 +83,61 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     );
                   }
 
-                  if (state is ApplicationsLoaded) {
-                    final applications = state.applications;
-
-                    if (applications.isEmpty) {
-                      return const SliverFillRemaining(
-                        child: EmptyState(
-                          icon: Icons.folder_open_outlined,
-                          title: 'No applications yet',
-                          subtitle:
-                              'Jobs you mark as applied will appear here.',
+                  if (state is DocumentDownloadInProgress) {
+                    // Show a quick loading indicator without breaking the list view
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Downloading document...'),
+                          duration: Duration(seconds: 1),
                         ),
                       );
-                    }
+                    });
+                  }
 
-                    return SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xxl,
-                      ),
-                      sliver: SliverList.separated(
-                        itemCount: applications.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          return _ApplicationCard(
-                            application: applications[index],
-                            onOpenDocument: _openDocument,
-                          );
-                        },
+                  if (state is DocumentDownloaded) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      OpenFilex.open(state.localFilePath);
+                    });
+                  }
+
+                  if (state is ApplicationsLoaded) {
+                    _applications = state.applications;
+                  }
+
+                  if (_applications.isEmpty && state is ApplicationLoading) {
+                    return const SliverFillRemaining(
+                      child: LoadingState(),
+                    );
+                  }
+
+                  if (_applications.isEmpty) {
+                    return const SliverFillRemaining(
+                      child: EmptyState(
+                        icon: Icons.folder_open_outlined,
+                        title: 'No applications yet',
+                        subtitle: 'Jobs you mark as applied will appear here.',
                       ),
                     );
                   }
 
-                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  return SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xxl,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: _applications.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (context, index) {
+                        return _ApplicationCard(
+                          application: _applications[index],
+                          onOpenDocument: _openDocument,
+                        );
+                      },
+                    ),
+                  );
                 },
               ),
 
@@ -143,7 +155,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
 class _ApplicationCard extends StatelessWidget {
   final ApplicationEntity application;
-  final Future<void> Function(String) onOpenDocument;
+  final void Function(String, String) onOpenDocument;
 
   const _ApplicationCard({
     required this.application,
@@ -212,7 +224,7 @@ class _ApplicationCard extends StatelessWidget {
             if (application.hasDocument) ...[
               const SizedBox(height: AppSpacing.sm),
               InkWell(
-                onTap: () => onOpenDocument(application.documentPath!),
+                onTap: () => onOpenDocument(application.documentPath!, application.documentName ?? 'Document.pdf'),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 child: Container(
                   padding: const EdgeInsets.symmetric(

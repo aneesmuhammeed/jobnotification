@@ -48,6 +48,19 @@ class CheckApplicationStatusRequested extends ApplicationEvent {
   List<Object?> get props => [userId, jobId];
 }
 
+class DownloadDocumentRequested extends ApplicationEvent {
+  final String fileId;
+  final String documentName;
+
+  const DownloadDocumentRequested({
+    required this.fileId,
+    required this.documentName,
+  });
+
+  @override
+  List<Object?> get props => [fileId, documentName];
+}
+
 /// Application BLoC states.
 abstract class ApplicationState extends Equatable {
   const ApplicationState();
@@ -100,4 +113,17 @@ class ApplicationError extends ApplicationState {
 
   @override
   List<Object?> get props => [message];
+}
+
+class DocumentDownloadInProgress extends ApplicationState {
+  const DocumentDownloadInProgress();
+}
+
+class DocumentDownloaded extends ApplicationState {
+  final String localFilePath;
+
+  const DocumentDownloaded(this.localFilePath);
+
+  @override
+  List<Object?> get props => [localFilePath];
 }

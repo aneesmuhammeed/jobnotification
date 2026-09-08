@@ -20,4 +20,7 @@ abstract class ApplicationRepository {
     required String userId,
     required String jobId,
   });
+
+  /// Download a document from Telegram and get the local file path.
+  Future<Either<Failure, String>> downloadDocument(String fileId, String documentName);
 }

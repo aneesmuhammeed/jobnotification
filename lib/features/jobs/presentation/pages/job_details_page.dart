@@ -116,6 +116,17 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   ),
                 );
               }
+              if (state is DocumentDownloadInProgress) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Downloading document...'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
+              if (state is DocumentDownloaded) {
+                OpenFilex.open(state.localFilePath);
+              }
             },
           ),
         ],
@@ -286,7 +297,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   if (_application!.hasDocument) ...[
                     const SizedBox(height: AppSpacing.sm),
                     InkWell(
-                      onTap: () => _openDocument(_application!.documentPath!),
+                      onTap: () => _openDocument(_application!.documentPath!, _application!.documentName ?? 'Document.pdf'),
                       child: Row(
                         children: [
                           const Icon(Icons.description_outlined,
@@ -330,19 +341,13 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     );
   }
 
-  Future<void> _openDocument(String path) async {
-    final file = File(path);
-    if (!await file.exists()) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Document unavailable — file may have been moved or deleted.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-    await OpenFilex.open(path);
+  void _openDocument(String fileId, String documentName) {
+    context.read<ApplicationBloc>().add(
+          DownloadDocumentRequested(
+            fileId: fileId,
+            documentName: documentName,
+          ),
+        );
   }
 }
 
@@ -403,19 +408,10 @@ class _MarkAppliedDialogState extends State<_MarkAppliedDialog> {
 
       if (result.isNotEmpty) {
         final file = result.first;
-        // Copy to app documents directory
-        final appDir = await getApplicationDocumentsDirectory();
-        final docsDir = Directory('${appDir.path}/${AppConstants.documentsDir}');
-        if (!await docsDir.exists()) {
-          await docsDir.create(recursive: true);
-        }
-
-        final destPath = '${docsDir.path}/${file.name}';
-        await File(file.path!).copy(destPath);
 
         setState(() {
           _selectedFileName = file.name;
-          _selectedFilePath = destPath;
+          _selectedFilePath = file.path;
         });
       }
     } catch (e) {
