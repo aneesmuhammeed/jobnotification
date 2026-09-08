@@ -114,6 +114,7 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
       body: BlocListener<JobBloc, JobState>(
         listener: (context, state) {
           if (state is JobCreated || state is JobUpdated) {
+            context.read<JobBloc>().add(const LoadJobsRequested());
             Navigator.of(context).pop();
           } else if (state is JobError) {
             ScaffoldMessenger.of(context).showSnackBar(

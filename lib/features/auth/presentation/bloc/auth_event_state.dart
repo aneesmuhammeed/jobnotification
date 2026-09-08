@@ -51,6 +51,16 @@ class ToggleNotificationsRequested extends AuthEvent {
   List<Object?> get props => [enabled];
 }
 
+class UpdateDailyReminderRequested extends AuthEvent {
+  final bool enabled;
+  final String timeUtc;
+
+  const UpdateDailyReminderRequested(this.enabled, this.timeUtc);
+
+  @override
+  List<Object?> get props => [enabled, timeUtc];
+}
+
 /// Auth BLoC states.
 abstract class AuthState extends Equatable {
   const AuthState();

@@ -12,6 +12,7 @@ import 'package:jobnoti/features/auth/domain/usecases/register.dart';
 import 'package:jobnoti/features/auth/domain/usecases/logout.dart';
 import 'package:jobnoti/features/auth/domain/usecases/get_current_user.dart';
 import 'package:jobnoti/features/auth/domain/usecases/toggle_notifications.dart';
+import 'package:jobnoti/features/auth/domain/usecases/update_daily_reminder.dart';
 import 'package:jobnoti/features/auth/presentation/bloc/auth_bloc.dart';
 
 // Features - Jobs
@@ -64,6 +65,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => Logout(sl()));
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
   sl.registerLazySingleton(() => ToggleNotifications(sl()));
+  sl.registerLazySingleton(() => UpdateDailyReminder(sl()));
 
   // BLoC
   sl.registerFactory(
@@ -73,6 +75,7 @@ Future<void> initDependencies() async {
       logout: sl(),
       getCurrentUser: sl(),
       toggleNotifications: sl(),
+      updateDailyReminder: sl(),
     ),
   );
 

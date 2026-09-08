@@ -78,7 +78,16 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
           .single();
 
       return JobModel.fromJson(response);
-    } catch (e) {
+    } catch (e, stack) {
+      print('=== CREATE JOB ERROR ===');
+      print(e.toString());
+      if (e is PostgrestException) {
+        print('Code: ${e.code}');
+        print('Details: ${e.details}');
+        print('Hint: ${e.hint}');
+        print('Message: ${e.message}');
+      }
+      print('========================');
       throw ServerException(e.toString());
     }
   }

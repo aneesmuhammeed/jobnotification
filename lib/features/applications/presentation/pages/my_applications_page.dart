@@ -43,8 +43,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Document unavailable — file may have been moved or deleted.'),
+          content: Text('Document unavailable. Resumes are saved locally on the device you applied from. If you applied on Chrome or another phone, the file is not on this device.'),
           backgroundColor: AppColors.warning,
+          duration: Duration(seconds: 4),
         ),
       );
       return;

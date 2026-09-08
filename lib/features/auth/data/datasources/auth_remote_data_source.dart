@@ -22,6 +22,8 @@ abstract class AuthRemoteDataSource {
   Future<UserModel?> getCurrentUser();
 
   Future<UserModel> toggleNotifications(bool enabled);
+
+  Future<UserModel> updateDailyReminder(bool enabled, String timeUtc);
 }
 
 /// Supabase implementation of [AuthRemoteDataSource].
@@ -161,6 +163,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await supabaseClient
           .from(AppConstants.profilesTable)
           .update({'notification_enabled': enabled})
+          .eq('id', user.id);
+
+      final profileData = await supabaseClient
+          .from(AppConstants.profilesTable)
+          .select()
+          .eq('id', user.id)
+          .single();
+
+      return UserModel.fromJson({
+        ...profileData,
+        'email': user.email ?? '',
+      });
+    } catch (e) {
+      throw custom_err.AuthException(e.toString());
+    }
+  }
+
+  @override
+  Future<UserModel> updateDailyReminder(bool enabled, String timeUtc) async {
+    try {
+      final user = supabaseClient.auth.currentUser;
+      if (user == null) {
+        throw const custom_err.AuthException('Not authenticated');
+      }
+
+      await supabaseClient
+          .from(AppConstants.profilesTable)
+          .update({
+            'daily_reminder_enabled': enabled,
+            'reminder_time_utc': timeUtc,
+          })
           .eq('id', user.id);
 
       final profileData = await supabaseClient

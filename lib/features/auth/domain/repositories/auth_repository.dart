@@ -25,4 +25,7 @@ abstract class AuthRepository {
 
   /// Toggle push notifications for the current user.
   Future<Either<Failure, UserEntity>> toggleNotifications(bool enabled);
+
+  /// Update daily reminder settings.
+  Future<Either<Failure, UserEntity>> updateDailyReminder(bool enabled, String timeUtc);
 }

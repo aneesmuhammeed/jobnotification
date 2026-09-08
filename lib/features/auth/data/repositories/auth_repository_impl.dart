@@ -82,4 +82,14 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, UserEntity>> updateDailyReminder(bool enabled, String timeUtc) async {
+    try {
+      final userModel = await remoteDataSource.updateDailyReminder(enabled, timeUtc);
+      return Right(userModel);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

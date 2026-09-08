@@ -13,7 +13,10 @@ import 'package:jobnoti/features/applications/presentation/bloc/application_bloc
 import 'package:firebase_core/firebase_core.dart';
 import 'package:jobnoti/firebase_options.dart';
 import 'package:jobnoti/core/services/notification_service.dart';
+import 'package:jobnoti/features/jobs/presentation/pages/job_details_page.dart' as job_details;
 import 'dart:developer';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +28,7 @@ void main() async {
   );
 
   // Initialize Dependency Injection
+
   await di.initDependencies();
 
   // Initialize Firebase (safely catch if flutterfire configure hasn't been run)
@@ -33,7 +37,18 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     // Initialize Notification Service
-    await sl<NotificationService>().initialize();
+    final notificationService = di.sl<NotificationService>();
+    notificationService.onNotificationClick = (payload) {
+      if (payload.containsKey('job_id')) {
+        final jobId = payload['job_id'];
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => job_details.JobDetailsPage(jobId: jobId),
+          ),
+        );
+      }
+    };
+    await notificationService.initialize();
   } catch (e) {
     log('Firebase could not be initialized. Please run `flutterfire configure`. Error: $e');
   }
@@ -59,6 +74,7 @@ class JobNotiApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'JobNoti',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,

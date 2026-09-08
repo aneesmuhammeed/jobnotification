@@ -5,7 +5,9 @@ import 'package:jobnoti/features/auth/domain/usecases/register.dart';
 import 'package:jobnoti/features/auth/domain/usecases/logout.dart';
 import 'package:jobnoti/features/auth/domain/usecases/get_current_user.dart';
 import 'package:jobnoti/features/auth/domain/usecases/toggle_notifications.dart';
+import 'package:jobnoti/features/auth/domain/usecases/update_daily_reminder.dart';
 import 'package:jobnoti/features/auth/presentation/bloc/auth_event_state.dart';
+import 'package:jobnoti/features/auth/domain/entities/user_entity.dart';
 
 /// Auth BLoC — manages authentication state.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -14,6 +16,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final Logout logout;
   final GetCurrentUser getCurrentUser;
   final ToggleNotifications toggleNotifications;
+  final UpdateDailyReminder updateDailyReminder;
 
   AuthBloc({
     required this.login,
@@ -21,12 +24,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.logout,
     required this.getCurrentUser,
     required this.toggleNotifications,
+    required this.updateDailyReminder,
   }) : super(const AuthInitial()) {
     on<CheckAuthRequested>(_onCheckAuth);
     on<LoginRequested>(_onLogin);
     on<RegisterRequested>(_onRegister);
     on<LogoutRequested>(_onLogout);
     on<ToggleNotificationsRequested>(_onToggleNotifications);
+    on<UpdateDailyReminderRequested>(_onUpdateDailyReminder);
   }
 
   Future<void> _onCheckAuth(
@@ -105,10 +110,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         fullName: user.fullName,
         role: user.role,
         notificationEnabled: event.enabled,
+        dailyReminderEnabled: user.dailyReminderEnabled,
+        reminderTimeUtc: user.reminderTimeUtc,
       );
       emit(Authenticated(updatedUser));
 
       final result = await toggleNotifications(event.enabled);
+      result.fold(
+        (failure) {
+          emit(AuthError(failure.message));
+          emit(Authenticated(user)); // Rollback
+        },
+        (user) => emit(Authenticated(user)),
+      );
+    }
+  }
+
+  Future<void> _onUpdateDailyReminder(
+    UpdateDailyReminderRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (state is Authenticated) {
+      final user = (state as Authenticated).user;
+      
+      // Optimistic update
+      final updatedUser = UserEntity(
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        notificationEnabled: user.notificationEnabled,
+        dailyReminderEnabled: event.enabled,
+        reminderTimeUtc: event.timeUtc,
+      );
+      emit(Authenticated(updatedUser));
+
+      final result = await updateDailyReminder(
+        UpdateDailyReminderParams(enabled: event.enabled, timeUtc: event.timeUtc),
+      );
       result.fold(
         (failure) {
           emit(AuthError(failure.message));

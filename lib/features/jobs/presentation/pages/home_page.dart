@@ -24,6 +24,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Set<String> _appliedJobIds = {};
+  String _filterStatus = 'all';
 
   @override
   void initState() {
@@ -84,6 +85,24 @@ class _HomePageState extends State<HomePage> {
                           'Available Opportunities',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
+                        const SizedBox(height: AppSpacing.md),
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(value: 'all', label: Text('All')),
+                            ButtonSegment(value: 'not_applied', label: Text('New')),
+                            ButtonSegment(value: 'applied', label: Text('Applied')),
+                          ],
+                          selected: {_filterStatus},
+                          onSelectionChanged: (Set<String> newSelection) {
+                            setState(() {
+                              _filterStatus = newSelection.first;
+                            });
+                          },
+                          style: SegmentedButton.styleFrom(
+                            selectedForegroundColor: Colors.white,
+                            selectedBackgroundColor: AppColors.primary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -109,9 +128,13 @@ class _HomePageState extends State<HomePage> {
 
                     if (state is JobsLoaded) {
                       // Filter to only available (active + not expired) jobs
-                      final jobs = state.jobs
-                          .where((j) => j.isAvailable)
-                          .toList();
+                      var jobs = state.jobs.where((j) => j.isAvailable).toList();
+
+                      if (_filterStatus == 'applied') {
+                        jobs = jobs.where((j) => _appliedJobIds.contains(j.id)).toList();
+                      } else if (_filterStatus == 'not_applied') {
+                        jobs = jobs.where((j) => !_appliedJobIds.contains(j.id)).toList();
+                      }
 
                       if (jobs.isEmpty) {
                         return const SliverFillRemaining(

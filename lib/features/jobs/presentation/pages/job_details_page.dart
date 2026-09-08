@@ -19,6 +19,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:jobnoti/core/constants/app_constants.dart';
+import 'package:open_filex/open_filex.dart';
 
 class JobDetailsPage extends StatefulWidget {
   final String jobId;
@@ -341,12 +342,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
       );
       return;
     }
-    // Use open_filex or similar to open
-    // For now show a snackbar with the path
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening: ${file.path}')),
-    );
+    await OpenFilex.open(path);
   }
 }
 
@@ -400,29 +396,27 @@ class _MarkAppliedDialogState extends State<_MarkAppliedDialog> {
     setState(() => _isPickingFile = true);
 
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'],
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.path != null) {
-          // Copy to app documents directory
-          final appDir = await getApplicationDocumentsDirectory();
-          final docsDir = Directory('${appDir.path}/${AppConstants.documentsDir}');
-          if (!await docsDir.exists()) {
-            await docsDir.create(recursive: true);
-          }
-
-          final destPath = '${docsDir.path}/${file.name}';
-          await File(file.path!).copy(destPath);
-
-          setState(() {
-            _selectedFileName = file.name;
-            _selectedFilePath = destPath;
-          });
+      if (result.isNotEmpty) {
+        final file = result.first;
+        // Copy to app documents directory
+        final appDir = await getApplicationDocumentsDirectory();
+        final docsDir = Directory('${appDir.path}/${AppConstants.documentsDir}');
+        if (!await docsDir.exists()) {
+          await docsDir.create(recursive: true);
         }
+
+        final destPath = '${docsDir.path}/${file.name}';
+        await File(file.path!).copy(destPath);
+
+        setState(() {
+          _selectedFileName = file.name;
+          _selectedFilePath = destPath;
+        });
       }
     } catch (e) {
       // Silently handle file picker errors

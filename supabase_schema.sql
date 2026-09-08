@@ -6,7 +6,9 @@ CREATE TABLE profiles (
   full_name TEXT NOT NULL,
   role TEXT DEFAULT 'user' NOT NULL,
   fcm_token TEXT,
-  notification_enabled BOOLEAN DEFAULT true
+  notification_enabled BOOLEAN DEFAULT true,
+  daily_reminder_enabled BOOLEAN DEFAULT true,
+  reminder_time_utc TIME DEFAULT '12:30:00'
 );
 
 -- 2. Create Jobs Table
