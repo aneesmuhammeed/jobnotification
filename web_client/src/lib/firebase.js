@@ -21,11 +21,9 @@ export const requestNotificationPermission = async () => {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       const currentToken = await getToken(messaging, {
-        // You usually need a VAPID key here, but it works without it if the backend doesn't enforce WebPush VAPID explicitly.
-        // It's better to configure a VAPID key in Firebase Console -> Project Settings -> Cloud Messaging -> Web configuration.
-        // But for MVP, let's just request the token.
+        vapidKey: 'BFcsRF94WbRJNGO-6GdD_8rLpvrJmC4q4McuZad3izOLSfNxSkJH36XkHZxV_exMMlkUnBtjBTskShCe3RGJcog'
       });
-      
+
       if (currentToken) {
         // Save the token to Supabase profiles
         const { data: { session } } = await supabase.auth.getSession();
