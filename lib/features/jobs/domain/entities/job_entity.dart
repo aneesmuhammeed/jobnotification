@@ -6,7 +6,7 @@ class JobEntity extends Equatable {
   final String companyName;
   final String jobTitle;
   final String description;
-  final String applicationUrl;
+  final List<String> applicationUrls;
   final DateTime lastDate;
   final DateTime createdAt;
   final String createdBy;
@@ -17,7 +17,7 @@ class JobEntity extends Equatable {
     required this.companyName,
     required this.jobTitle,
     required this.description,
-    required this.applicationUrl,
+    required this.applicationUrls,
     required this.lastDate,
     required this.createdAt,
     required this.createdBy,
@@ -37,7 +37,7 @@ class JobEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, companyName, jobTitle, description, applicationUrl,
+        id, companyName, jobTitle, description, applicationUrls,
         lastDate, createdAt, createdBy, isActive,
       ];
 }

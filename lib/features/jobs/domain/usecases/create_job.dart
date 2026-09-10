@@ -16,7 +16,7 @@ class CreateJob extends UseCase<JobEntity, CreateJobParams> {
       companyName: params.companyName,
       jobTitle: params.jobTitle,
       description: params.description,
-      applicationUrl: params.applicationUrl,
+      applicationUrls: params.applicationUrls,
       lastDate: params.lastDate,
       createdBy: params.createdBy,
     );
@@ -27,7 +27,7 @@ class CreateJobParams extends Equatable {
   final String companyName;
   final String jobTitle;
   final String description;
-  final String applicationUrl;
+  final List<String> applicationUrls;
   final DateTime lastDate;
   final String createdBy;
 
@@ -35,7 +35,7 @@ class CreateJobParams extends Equatable {
     required this.companyName,
     required this.jobTitle,
     required this.description,
-    required this.applicationUrl,
+    required this.applicationUrls,
     required this.lastDate,
     required this.createdBy,
   });
@@ -43,6 +43,6 @@ class CreateJobParams extends Equatable {
   @override
   List<Object?> get props => [
         companyName, jobTitle, description,
-        applicationUrl, lastDate, createdBy,
+        applicationUrls, lastDate, createdBy,
       ];
 }

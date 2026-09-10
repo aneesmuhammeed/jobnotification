@@ -18,7 +18,7 @@ abstract class JobRepository {
     required String companyName,
     required String jobTitle,
     required String description,
-    required String applicationUrl,
+    required List<String> applicationUrls,
     required DateTime lastDate,
     required String createdBy,
   });
@@ -29,7 +29,7 @@ abstract class JobRepository {
     required String companyName,
     required String jobTitle,
     required String description,
-    required String applicationUrl,
+    required List<String> applicationUrls,
     required DateTime lastDate,
     required bool isActive,
   });

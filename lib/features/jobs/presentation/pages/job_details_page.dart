@@ -324,11 +324,15 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
 
           // Action buttons (only if not expired and not already applied)
           if (!isExpired && !hasApplied && !_checkingStatus) ...[
-            PrimaryButton(
-              text: 'Apply Now',
-              icon: Icons.open_in_new_rounded,
-              onPressed: () => UrlLauncherUtils.openUrl(job.applicationUrl),
-            ),
+            if (job.applicationUrls.isNotEmpty)
+              ...job.applicationUrls.map((url) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: PrimaryButton(
+                      text: job.applicationUrls.length > 1 ? 'Apply Now (Link ${job.applicationUrls.indexOf(url) + 1})' : 'Apply Now',
+                      icon: Icons.open_in_new_rounded,
+                      onPressed: () => UrlLauncherUtils.openUrl(url),
+                    ),
+                  )),
             const SizedBox(height: AppSpacing.md),
             SecondaryButton(
               text: 'Mark as Applied',

@@ -24,7 +24,7 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
   late TextEditingController _companyController;
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  late TextEditingController _urlController;
+  final List<TextEditingController> _urlControllers = [];
   DateTime? _selectedDate;
   bool _isActive = true;
 
@@ -36,7 +36,13 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
     _companyController = TextEditingController(text: widget.jobToEdit?.companyName);
     _titleController = TextEditingController(text: widget.jobToEdit?.jobTitle);
     _descriptionController = TextEditingController(text: widget.jobToEdit?.description);
-    _urlController = TextEditingController(text: widget.jobToEdit?.applicationUrl);
+    if (widget.jobToEdit != null && widget.jobToEdit!.applicationUrls.isNotEmpty) {
+      for (final url in widget.jobToEdit!.applicationUrls) {
+        _urlControllers.add(TextEditingController(text: url));
+      }
+    } else {
+      _urlControllers.add(TextEditingController());
+    }
     _selectedDate = widget.jobToEdit?.lastDate;
     _isActive = widget.jobToEdit?.isActive ?? true;
   }
@@ -46,7 +52,9 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
     _companyController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _urlController.dispose();
+    for (final controller in _urlControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -75,6 +83,18 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
         return;
       }
 
+      final urls = _urlControllers
+          .map((c) => c.text.trim())
+          .where((url) => url.isNotEmpty)
+          .toList();
+
+      if (urls.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please provide at least one valid application URL')),
+        );
+        return;
+      }
+
       final authState = context.read<AuthBloc>().state;
       if (authState is! Authenticated) return;
 
@@ -85,7 +105,7 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
                 companyName: _companyController.text.trim(),
                 jobTitle: _titleController.text.trim(),
                 description: _descriptionController.text.trim(),
-                applicationUrl: _urlController.text.trim(),
+                applicationUrls: urls,
                 lastDate: _selectedDate!,
                 isActive: _isActive,
               ),
@@ -96,7 +116,7 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
                 companyName: _companyController.text.trim(),
                 jobTitle: _titleController.text.trim(),
                 description: _descriptionController.text.trim(),
-                applicationUrl: _urlController.text.trim(),
+                applicationUrls: urls,
                 lastDate: _selectedDate!,
                 createdBy: authState.user.id,
               ),
@@ -168,23 +188,68 @@ class _AddEditJobPageState extends State<AddEditJobPage> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
-                // Application URL
-                TextFormField(
-                  controller: _urlController,
-                  textInputAction: TextInputAction.done,
-                  keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'Application URL',
-                    prefixIcon: Icon(Icons.link_outlined),
+                // Application URLs
+                const Text(
+                  'Application URLs',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ..._urlControllers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final controller = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: controller,
+                            textInputAction: TextInputAction.next,
+                            keyboardType: TextInputType.url,
+                            decoration: InputDecoration(
+                              labelText: 'Link ${index + 1}',
+                              prefixIcon: const Icon(Icons.link_outlined),
+                            ),
+                            validator: (value) {
+                              if (index == 0 && (value == null || value.trim().isEmpty)) {
+                                return 'At least one URL is required';
+                              }
+                              if (value != null && value.trim().isNotEmpty) {
+                                final uri = Uri.tryParse(value.trim());
+                                if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+                                  return 'Enter a valid URL';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        if (_urlControllers.length > 1)
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.error),
+                            onPressed: () {
+                              setState(() {
+                                _urlControllers[index].dispose();
+                                _urlControllers.removeAt(index);
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _urlControllers.add(TextEditingController());
+                      });
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Another Link'),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Required';
-                    final uri = Uri.tryParse(value.trim());
-                    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-                      return 'Enter a valid URL (e.g. https://...)';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: AppSpacing.lg),
 

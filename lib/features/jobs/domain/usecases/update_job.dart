@@ -17,7 +17,7 @@ class UpdateJob extends UseCase<JobEntity, UpdateJobParams> {
       companyName: params.companyName,
       jobTitle: params.jobTitle,
       description: params.description,
-      applicationUrl: params.applicationUrl,
+      applicationUrls: params.applicationUrls,
       lastDate: params.lastDate,
       isActive: params.isActive,
     );
@@ -29,7 +29,7 @@ class UpdateJobParams extends Equatable {
   final String companyName;
   final String jobTitle;
   final String description;
-  final String applicationUrl;
+  final List<String> applicationUrls;
   final DateTime lastDate;
   final bool isActive;
 
@@ -38,7 +38,7 @@ class UpdateJobParams extends Equatable {
     required this.companyName,
     required this.jobTitle,
     required this.description,
-    required this.applicationUrl,
+    required this.applicationUrls,
     required this.lastDate,
     required this.isActive,
   });
@@ -46,6 +46,6 @@ class UpdateJobParams extends Equatable {
   @override
   List<Object?> get props => [
         jobId, companyName, jobTitle, description,
-        applicationUrl, lastDate, isActive,
+        applicationUrls, lastDate, isActive,
       ];
 }

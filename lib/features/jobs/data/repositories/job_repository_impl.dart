@@ -47,7 +47,7 @@ class JobRepositoryImpl implements JobRepository {
     required String companyName,
     required String jobTitle,
     required String description,
-    required String applicationUrl,
+    required List<String> applicationUrls,
     required DateTime lastDate,
     required String createdBy,
   }) async {
@@ -57,7 +57,7 @@ class JobRepositoryImpl implements JobRepository {
         companyName: companyName,
         jobTitle: jobTitle,
         description: description,
-        applicationUrl: applicationUrl,
+        applicationUrls: applicationUrls,
         lastDate: lastDate,
         createdAt: DateTime.now(),
         createdBy: createdBy,
@@ -76,7 +76,7 @@ class JobRepositoryImpl implements JobRepository {
     required String companyName,
     required String jobTitle,
     required String description,
-    required String applicationUrl,
+    required List<String> applicationUrls,
     required DateTime lastDate,
     required bool isActive,
   }) async {
@@ -85,7 +85,7 @@ class JobRepositoryImpl implements JobRepository {
         'company_name': companyName,
         'job_title': jobTitle,
         'description': description,
-        'application_url': applicationUrl,
+        'application_urls': applicationUrls,
         'last_date': lastDate.toIso8601String().split('T').first,
         'is_active': isActive,
       };

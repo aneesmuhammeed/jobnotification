@@ -33,7 +33,7 @@ class CreateJobRequested extends JobEvent {
   final String companyName;
   final String jobTitle;
   final String description;
-  final String applicationUrl;
+  final List<String> applicationUrls;
   final DateTime lastDate;
   final String createdBy;
 
@@ -41,7 +41,7 @@ class CreateJobRequested extends JobEvent {
     required this.companyName,
     required this.jobTitle,
     required this.description,
-    required this.applicationUrl,
+    required this.applicationUrls,
     required this.lastDate,
     required this.createdBy,
   });
@@ -49,7 +49,7 @@ class CreateJobRequested extends JobEvent {
   @override
   List<Object?> get props => [
         companyName, jobTitle, description,
-        applicationUrl, lastDate, createdBy,
+        applicationUrls, lastDate, createdBy,
       ];
 }
 
@@ -58,7 +58,7 @@ class UpdateJobRequested extends JobEvent {
   final String companyName;
   final String jobTitle;
   final String description;
-  final String applicationUrl;
+  final List<String> applicationUrls;
   final DateTime lastDate;
   final bool isActive;
 
@@ -67,7 +67,7 @@ class UpdateJobRequested extends JobEvent {
     required this.companyName,
     required this.jobTitle,
     required this.description,
-    required this.applicationUrl,
+    required this.applicationUrls,
     required this.lastDate,
     required this.isActive,
   });
@@ -75,7 +75,7 @@ class UpdateJobRequested extends JobEvent {
   @override
   List<Object?> get props => [
         jobId, companyName, jobTitle, description,
-        applicationUrl, lastDate, isActive,
+        applicationUrls, lastDate, isActive,
       ];
 }
 

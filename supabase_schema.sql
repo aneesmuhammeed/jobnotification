@@ -17,7 +17,7 @@ CREATE TABLE jobs (
   company_name TEXT NOT NULL,
   job_title TEXT NOT NULL,
   description TEXT NOT NULL,
-  application_url TEXT NOT NULL,
+  application_urls TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,
   last_date DATE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
