@@ -1,8 +1,21 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import { Briefcase, User, LogOut, Bell, Settings } from 'lucide-react'
+import { LogOut, Bell, Settings } from 'lucide-react'
 import { requestNotificationPermission, listenForForegroundMessages } from './lib/firebase'
+
+// Lazy loaded pages for code splitting
+const Auth = lazy(() => import('./pages/Auth'))
+const JobBoard = lazy(() => import('./pages/JobBoard'))
+const MyApplications = lazy(() => import('./pages/MyApplications'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+
+// ProtectedRoute component
+const ProtectedRoute = ({ session, children, requireAdmin, isAdmin }) => {
+  if (!session) return <Navigate to="/auth" />
+  if (requireAdmin && !isAdmin) return <Navigate to="/" />
+  return children
+}
 
 // Layout Component
 const Layout = ({ children, session, onSignOut }) => {
@@ -14,25 +27,25 @@ const Layout = ({ children, session, onSignOut }) => {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('daily_reminder_enabled, reminder_time_utc')
+        .eq('id', session.user.id)
+        .single()
+      
+      if (data) {
+        setReminderSettings({
+          daily_reminder_enabled: data.daily_reminder_enabled,
+          reminder_time_utc: data.reminder_time_utc
+        })
+      }
+    }
+
     if (session?.user?.id) {
       fetchSettings()
     }
-  }, [session])
-
-  const fetchSettings = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('daily_reminder_enabled, reminder_time_utc')
-      .eq('id', session.user.id)
-      .single()
-    
-    if (data) {
-      setReminderSettings({
-        daily_reminder_enabled: data.daily_reminder_enabled,
-        reminder_time_utc: data.reminder_time_utc
-      })
-    }
-  }
+  }, [session?.user?.id])
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -170,16 +183,26 @@ const Layout = ({ children, session, onSignOut }) => {
   )
 }
 
-// Pages will be imported here
-import Auth from './pages/Auth'
-import JobBoard from './pages/JobBoard'
-import MyApplications from './pages/MyApplications'
-import AdminDashboard from './pages/AdminDashboard'
-
 function App() {
   const [session, setSession] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  const checkAdminStatus = async (userId) => {
+    if (!userId) {
+      setIsAdmin(false)
+      setLoading(false)
+      return
+    }
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    
+    setIsAdmin(data?.role === 'admin')
+    setLoading(false)
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -197,26 +220,6 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const checkAdminStatus = async (userId) => {
-    if (!userId) {
-      setIsAdmin(false)
-      setLoading(false)
-      return
-    }
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single()
-    
-    if (data?.role === 'admin') {
-      setIsAdmin(true)
-    } else {
-      setIsAdmin(false)
-    }
-    setLoading(false)
-  }
-
   const handleSignOut = async () => {
     await supabase.auth.signOut()
   }
@@ -228,12 +231,42 @@ function App() {
   return (
     <Router>
       <Layout session={session} onSignOut={handleSignOut}>
-        <Routes>
-          <Route path="/" element={session ? <JobBoard isAdmin={isAdmin} /> : <Navigate to="/auth" />} />
-          <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/" />} />
-          <Route path="/applications" element={session ? <MyApplications /> : <Navigate to="/auth" />} />
-          <Route path="/admin" element={session && isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
-        </Routes>
+        <Suspense fallback={<div className="flex-center" style={{ minHeight: '50vh' }}>Loading Page...</div>}>
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute session={session}>
+                  <JobBoard isAdmin={isAdmin} />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/applications" 
+              element={
+                <ProtectedRoute session={session}>
+                  <MyApplications />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute session={session} requireAdmin={true} isAdmin={isAdmin}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/auth" 
+              element={!session ? <Auth /> : <Navigate to="/" />} 
+            />
+            <Route 
+              path="*" 
+              element={<Navigate to="/" />} 
+            />
+          </Routes>
+        </Suspense>
       </Layout>
     </Router>
   )
