@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Briefcase, Calendar, Link as LinkIcon, Building, Search, UploadCloud, CheckCircle } from 'lucide-react'
+import { Briefcase, Calendar, Link as LinkIcon, Building, Search, UploadCloud, DownloadCloud, CheckCircle } from 'lucide-react'
 
 export default function JobBoard({ isAdmin }) {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState(null)
-  const [userApplications, setUserApplications] = useState(new Set())
+  const [applicationsMap, setApplicationsMap] = useState({})
   const [selectedJob, setSelectedJob] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState('pending') // 'pending' or 'applied'
 
   useEffect(() => {
     fetchJobs()
@@ -32,11 +33,15 @@ export default function JobBoard({ isAdmin }) {
 
     const { data } = await supabase
       .from('applications')
-      .select('job_id')
+      .select('*')
       .eq('user_id', session.user.id)
     
     if (data) {
-      setUserApplications(new Set(data.map(app => app.job_id)))
+      const appMap = {}
+      data.forEach(app => {
+        appMap[app.job_id] = app
+      })
+      setApplicationsMap(appMap)
     }
   }
 
@@ -47,7 +52,6 @@ export default function JobBoard({ isAdmin }) {
     setApplying(job.id)
 
     try {
-      // Upload to Telegram as requested
       const botToken = '8107955995:AAGoc6EAjGRsWbXqDqAsdwX25hXd_zttw08'
       const chatId = '-1003741865575'
       
@@ -76,8 +80,14 @@ export default function JobBoard({ isAdmin }) {
         ])
         
         if (!error) {
-          setUserApplications(prev => new Set(prev).add(job.id))
-          // Open the primary URL
+          setApplicationsMap(prev => ({
+            ...prev,
+            [job.id]: {
+              job_id: job.id,
+              document_name: file.name,
+              document_path: documentPath
+            }
+          }))
           const primaryUrl = (job.application_urls && job.application_urls.length > 0) 
             ? job.application_urls[0] 
             : job.application_url
@@ -97,22 +107,78 @@ export default function JobBoard({ isAdmin }) {
     }
   }
 
-  const filteredJobs = jobs.filter(job => 
-    job.job_title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    job.company_name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const handleDownloadResume = async (application) => {
+    if (!application?.document_path) return
+    try {
+      const botToken = '8107955995:AAGoc6EAjGRsWbXqDqAsdwX25hXd_zttw08'
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${application.document_path}`)
+      const data = await response.json()
+      
+      if (data.ok) {
+        const filePath = data.result.file_path
+        const downloadUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`
+        const a = document.createElement('a')
+        a.href = downloadUrl
+        a.download = application.document_name || 'Resume'
+        a.target = '_blank'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      } else {
+        alert("Failed to get file from Telegram")
+      }
+    } catch (err) {
+      alert("Error downloading resume: " + err.message)
+    }
+  }
+
+  const visibleJobs = jobs.filter(job => {
+    const matchesSearch = job.job_title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          job.company_name.toLowerCase().includes(searchQuery.toLowerCase())
+    if (!matchesSearch) return false
+
+    const hasApplied = !!applicationsMap[job.id]
+    if (activeTab === 'pending') return !hasApplied
+    return hasApplied
+  })
 
   if (loading) return <div>Loading jobs...</div>
 
   return (
     <div className="animate-fade-in">
       <div className="flex-between" style={{ marginBottom: '2rem' }}>
-        <h1 className="heading-1">Latest Jobs</h1>
+        <h1 className="heading-1">Job Board</h1>
         {isAdmin && (
           <a href="/admin" className="btn btn-outline">
             Manage Jobs
           </a>
         )}
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
+        <button 
+          onClick={() => setActiveTab('pending')}
+          style={{
+            background: 'none', border: 'none', padding: '0.5rem 1rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
+            color: activeTab === 'pending' ? 'var(--primary-color)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'pending' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            transition: 'var(--transition)'
+          }}
+        >
+          Apply Pending
+        </button>
+        <button 
+          onClick={() => setActiveTab('applied')}
+          style={{
+            background: 'none', border: 'none', padding: '0.5rem 1rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
+            color: activeTab === 'applied' ? 'var(--primary-color)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'applied' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            transition: 'var(--transition)'
+          }}
+        >
+          Applied Jobs
+        </button>
       </div>
 
       <div style={{ marginBottom: '2rem', position: 'relative' }}>
@@ -125,12 +191,12 @@ export default function JobBoard({ isAdmin }) {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="form-input"
-          style={{ paddingLeft: '3rem', fontSize: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-sm)' }}
+          style={{ paddingLeft: '3rem', fontSize: '1rem', borderRadius: '12px' }}
         />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-        {filteredJobs.map(job => (
+        {visibleJobs.map(job => (
           <div 
             key={job.id} 
             className="glass-panel" 
@@ -153,9 +219,15 @@ export default function JobBoard({ isAdmin }) {
             </div>
             
             <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }} onClick={e => e.stopPropagation()}>
-              {userApplications.has(job.id) ? (
-                <button className="btn" style={{ width: '100%', backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', cursor: 'default' }} disabled>
-                  <CheckCircle size={16} style={{ marginRight: '0.5rem', display: 'inline' }} /> Applied
+              {activeTab === 'applied' ? (
+                <button 
+                  onClick={() => handleDownloadResume(applicationsMap[job.id])}
+                  className="btn" 
+                  style={{ width: '100%', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }} 
+                  disabled={!applicationsMap[job.id]?.document_path}
+                >
+                  <DownloadCloud size={16} style={{ marginRight: '0.5rem' }} /> 
+                  {applicationsMap[job.id]?.document_path ? 'Download Resume' : 'No Resume Attached'}
                 </button>
               ) : (
                 <button 
@@ -169,11 +241,11 @@ export default function JobBoard({ isAdmin }) {
             </div>
           </div>
         ))}
-        {filteredJobs.length === 0 && (
+        {visibleJobs.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)', background: 'var(--glass-bg)', borderRadius: '16px' }}>
             <Search size={48} style={{ margin: '0 auto 1rem', opacity: 0.2 }} />
             <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No jobs found</h3>
-            <p>Try adjusting your search query.</p>
+            <p>Try adjusting your search query or check the other tab.</p>
           </div>
         )}
       </div>
@@ -224,13 +296,25 @@ export default function JobBoard({ isAdmin }) {
             </div>
 
             <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem', textAlign: 'center' }}>
-              {userApplications.has(selectedJob.id) ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', justifyContent: 'center' }}>
-                  <CheckCircle size={24} color="#059669" />
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 600, color: '#065f46' }}>Application Submitted</div>
-                    <div style={{ fontSize: '0.875rem', color: '#10b981' }}>Check "My Applications" for updates</div>
+              {activeTab === 'applied' ? (
+                <div>
+                  <h4 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>Application Status</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', justifyContent: 'center', marginBottom: '1rem' }}>
+                    <CheckCircle size={24} color="#059669" />
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontWeight: 600, color: '#065f46' }}>Successfully Applied</div>
+                    </div>
                   </div>
+                  
+                  <button 
+                    onClick={() => handleDownloadResume(applicationsMap[selectedJob.id])}
+                    className="btn btn-primary"
+                    style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
+                    disabled={!applicationsMap[selectedJob.id]?.document_path}
+                  >
+                    <DownloadCloud size={20} />
+                    {applicationsMap[selectedJob.id]?.document_path ? 'Download Submitted Resume' : 'No Resume Attached'}
+                  </button>
                 </div>
               ) : (
                 <div>

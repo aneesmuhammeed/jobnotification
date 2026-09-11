@@ -7,7 +7,6 @@ import { requestNotificationPermission, listenForForegroundMessages } from './li
 // Lazy loaded pages for code splitting
 const Auth = lazy(() => import('./pages/Auth'))
 const JobBoard = lazy(() => import('./pages/JobBoard'))
-const MyApplications = lazy(() => import('./pages/MyApplications'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 
 // ProtectedRoute component
@@ -109,7 +108,6 @@ const Layout = ({ children, session, onSignOut }) => {
             {session ? (
               <>
                 <Link to="/" className="nav-link">Jobs</Link>
-                <Link to="/applications" className="nav-link">My Applications</Link>
                 <button onClick={enablePush} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem' }} title="Enable Notifications">
                   <Bell size={16} />
                 </button>
@@ -241,14 +239,7 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/applications" 
-              element={
-                <ProtectedRoute session={session}>
-                  <MyApplications />
-                </ProtectedRoute>
-              } 
-            />
+
             <Route 
               path="/admin" 
               element={
