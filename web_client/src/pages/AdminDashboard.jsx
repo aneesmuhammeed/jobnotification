@@ -183,9 +183,9 @@ export default function AdminDashboard() {
                     borderRadius: '999px', 
                     fontSize: '0.75rem',
                     fontWeight: 600,
-                    backgroundColor: job.is_active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: job.is_active ? '#34d399' : '#f87171',
-                    border: job.is_active ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
+                    backgroundColor: job.is_active ? '#ecfdf5' : '#fef2f2',
+                    color: job.is_active ? '#059669' : '#dc2626',
+                    border: job.is_active ? '1px solid #a7f3d0' : '1px solid #fecaca'
                   }}>
                     {job.is_active ? 'Active' : 'Inactive'}
                   </span>
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                   <button onClick={() => toggleJobActive(job.id, job.is_active)} className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
                     Toggle Status
                   </button>
-                  <button onClick={() => deleteJob(job.id)} className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                  <button onClick={() => deleteJob(job.id)} className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
                     Delete
                   </button>
                 </td>

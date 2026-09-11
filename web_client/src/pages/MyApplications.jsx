@@ -124,7 +124,7 @@ export default function MyApplications() {
                   📄 {app.document_name} uploaded
                 </div>
               ) : (
-                <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#ef4444' }}>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#dc2626' }}>
                   No resume attached
                 </div>
               )}
@@ -208,19 +208,19 @@ export default function MyApplications() {
             <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem' }}>
               <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 600 }}>Uploaded Resume</h3>
               {selectedApp.document_name ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.3)', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: '#eff6ff', borderRadius: '12px', border: '1px solid #bfdbfe', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '1.5rem' }}>📄</span>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#93c5fd', wordBreak: 'break-all' }}>{selectedApp.document_name}</div>
-                    <div style={{ fontSize: '0.875rem', color: '#60a5fa' }}>Successfully uploaded</div>
+                    <div style={{ fontWeight: 600, color: '#1e40af', wordBreak: 'break-all' }}>{selectedApp.document_name}</div>
+                    <div style={{ fontSize: '0.875rem', color: '#2563eb' }}>Successfully uploaded</div>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '1.5rem' }}>⚠️</span>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#fca5a5' }}>No resume attached</div>
-                    <div style={{ fontSize: '0.875rem', color: '#f87171' }}>Please upload your resume to complete the application</div>
+                    <div style={{ fontWeight: 600, color: '#991b1b' }}>No resume attached</div>
+                    <div style={{ fontSize: '0.875rem', color: '#dc2626' }}>Please upload your resume to complete the application</div>
                   </div>
                 </div>
               )}

@@ -134,10 +134,8 @@ export default function JobBoard({ isAdmin }) {
           <div 
             key={job.id} 
             className="glass-panel" 
-            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'all 0.2s ease', border: '1px solid transparent' }}
+            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'all 0.2s ease' }}
             onClick={() => setSelectedJob(job)}
-            onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary-color)'}
-            onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
           >
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
