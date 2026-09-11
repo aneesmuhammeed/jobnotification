@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Briefcase, Calendar, Link as LinkIcon, Building, Search, UploadCloud, DownloadCloud, CheckCircle } from 'lucide-react'
 
@@ -149,9 +150,9 @@ export default function JobBoard({ isAdmin }) {
       <div className="flex-between" style={{ marginBottom: '2rem' }}>
         <h1 className="heading-1">Job Board</h1>
         {isAdmin && (
-          <a href="/admin" className="btn btn-outline">
+          <Link to="/admin" className="btn btn-outline">
             Manage Jobs
-          </a>
+          </Link>
         )}
       </div>
 
