@@ -91,7 +91,7 @@ export default function JobBoard({ isAdmin }) {
           }))
           const primaryUrl = (job.application_urls && job.application_urls.length > 0) 
             ? job.application_urls[0] 
-            : job.application_url
+            : null
           if (primaryUrl) {
             window.open(primaryUrl, '_blank')
           }
@@ -286,10 +286,6 @@ export default function JobBoard({ isAdmin }) {
                       </a>
                     ))}
                   </div>
-                ) : selectedJob.application_url ? (
-                  <a href={selectedJob.application_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <LinkIcon size={14} /> {selectedJob.application_url}
-                  </a>
                 ) : (
                   <span className="text-muted">No link provided</span>
                 )}
