@@ -28,7 +28,7 @@ class ApplicationBloc extends Bloc<ApplicationEvent, ApplicationState> {
     MarkAsAppliedRequested event,
     Emitter<ApplicationState> emit,
   ) async {
-    emit(const ApplicationLoading());
+    emit(const ApplicationMarkingInProgress());
     final result = await markJobAsApplied(
       MarkJobAsAppliedParams(
         userId: event.userId,
@@ -74,7 +74,7 @@ class ApplicationBloc extends Bloc<ApplicationEvent, ApplicationState> {
     DownloadDocumentRequested event,
     Emitter<ApplicationState> emit,
   ) async {
-    emit(const DocumentDownloadInProgress());
+    emit(DocumentDownloadInProgress(event.fileId));
     final result = await downloadDocument(
       DownloadDocumentParams(fileId: event.fileId, documentName: event.documentName),
     );

@@ -86,6 +86,10 @@ class ApplicationsLoaded extends ApplicationState {
   List<Object?> get props => [applications];
 }
 
+class ApplicationMarkingInProgress extends ApplicationState {
+  const ApplicationMarkingInProgress();
+}
+
 class ApplicationMarked extends ApplicationState {
   final ApplicationEntity application;
 
@@ -116,7 +120,12 @@ class ApplicationError extends ApplicationState {
 }
 
 class DocumentDownloadInProgress extends ApplicationState {
-  const DocumentDownloadInProgress();
+  final String fileId;
+
+  const DocumentDownloadInProgress(this.fileId);
+
+  @override
+  List<Object?> get props => [fileId];
 }
 
 class DocumentDownloaded extends ApplicationState {
