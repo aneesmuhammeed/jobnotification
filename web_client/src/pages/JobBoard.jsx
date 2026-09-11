@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Briefcase, Calendar, Link as LinkIcon, Building } from 'lucide-react'
+import { Briefcase, Calendar, Link as LinkIcon, Building, Search, UploadCloud, CheckCircle } from 'lucide-react'
 
 export default function JobBoard({ isAdmin }) {
   const [jobs, setJobs] = useState([])
@@ -8,6 +8,7 @@ export default function JobBoard({ isAdmin }) {
   const [applying, setApplying] = useState(null)
   const [userApplications, setUserApplications] = useState(new Set())
   const [selectedJob, setSelectedJob] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     fetchJobs()
@@ -39,33 +40,67 @@ export default function JobBoard({ isAdmin }) {
     }
   }
 
-  const handleApply = async (job) => {
-    // For MVP, applying just means creating a record in the applications table
-    // (Without telegram upload for this simple action, unless specified otherwise)
+  const handleFileUploadAndApply = async (e, job) => {
+    const file = e.target.files[0]
+    if (!file) return
+
     setApplying(job.id)
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    const { error } = await supabase.from('applications').insert([
-      {
-        user_id: session.user.id,
-        job_id: job.id,
+
+    try {
+      // Upload to Telegram as requested
+      const botToken = '8107955995:AAGoc6EAjGRsWbXqDqAsdwX25hXd_zttw08'
+      const chatId = '-1003741865575'
+      
+      const formData = new FormData()
+      formData.append('chat_id', chatId)
+      formData.append('document', file)
+
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+      
+      if (data.ok) {
+        const documentPath = data.result.document.file_id
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        const { error } = await supabase.from('applications').insert([
+          {
+            user_id: session.user.id,
+            job_id: job.id,
+            document_name: file.name,
+            document_path: documentPath
+          }
+        ])
+        
+        if (!error) {
+          setUserApplications(prev => new Set(prev).add(job.id))
+          // Open the primary URL
+          const primaryUrl = (job.application_urls && job.application_urls.length > 0) 
+            ? job.application_urls[0] 
+            : job.application_url
+          if (primaryUrl) {
+            window.open(primaryUrl, '_blank')
+          }
+        } else {
+          alert("Error applying: " + error.message)
+        }
+      } else {
+        alert("Failed to upload resume to Telegram")
       }
-    ])
-    
-    if (!error) {
-      setUserApplications(prev => new Set(prev).add(job.id))
-      // Open the primary URL
-      const primaryUrl = (job.application_urls && job.application_urls.length > 0) 
-        ? job.application_urls[0] 
-        : job.application_url
-      if (primaryUrl) {
-        window.open(primaryUrl, '_blank')
-      }
-    } else {
-      alert("Error applying: " + error.message)
+    } catch (err) {
+      alert("Error: " + err.message)
+    } finally {
+      setApplying(null)
     }
-    setApplying(null)
   }
+
+  const filteredJobs = jobs.filter(job => 
+    job.job_title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    job.company_name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   if (loading) return <div>Loading jobs...</div>
 
@@ -80,13 +115,29 @@ export default function JobBoard({ isAdmin }) {
         )}
       </div>
 
+      <div style={{ marginBottom: '2rem', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '1rem', color: 'var(--text-secondary)' }}>
+          <Search size={20} />
+        </div>
+        <input 
+          type="text" 
+          placeholder="Search by job title or company..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="form-input"
+          style={{ paddingLeft: '3rem', fontSize: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-sm)' }}
+        />
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-        {jobs.map(job => (
+        {filteredJobs.map(job => (
           <div 
             key={job.id} 
             className="glass-panel" 
-            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'all 0.2s ease', border: '1px solid transparent' }}
             onClick={() => setSelectedJob(job)}
+            onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary-color)'}
+            onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
           >
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -105,32 +156,33 @@ export default function JobBoard({ isAdmin }) {
             
             <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }} onClick={e => e.stopPropagation()}>
               {userApplications.has(job.id) ? (
-                <button className="btn" style={{ width: '100%', backgroundColor: '#10b981', color: 'white' }} disabled>
-                  Applied
+                <button className="btn" style={{ width: '100%', backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', cursor: 'default' }} disabled>
+                  <CheckCircle size={16} style={{ marginRight: '0.5rem', display: 'inline' }} /> Applied
                 </button>
               ) : (
                 <button 
-                  onClick={() => handleApply(job)} 
-                  className="btn btn-primary" 
-                  style={{ width: '100%' }}
-                  disabled={applying === job.id}
+                  onClick={() => setSelectedJob(job)} 
+                  className="btn btn-outline" 
+                  style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  {applying === job.id ? 'Applying...' : 'Apply Now'} <LinkIcon size={16} />
+                  View & Apply <Briefcase size={16} />
                 </button>
               )}
             </div>
           </div>
         ))}
-        {jobs.length === 0 && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-            No jobs found.
+        {filteredJobs.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)', background: 'var(--glass-bg)', borderRadius: '16px' }}>
+            <Search size={48} style={{ margin: '0 auto 1rem', opacity: 0.2 }} />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No jobs found</h3>
+            <p>Try adjusting your search query.</p>
           </div>
         )}
       </div>
 
       {selectedJob && (
         <div className="modal-overlay" onClick={() => setSelectedJob(null)}>
-          <div className="glass-panel modal-content" onClick={e => e.stopPropagation()}>
+          <div className="glass-panel modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={() => setSelectedJob(null)} style={{ 
               position: 'absolute', top: '1rem', right: '1rem', background: 'none', 
               border: 'none', fontSize: '2rem', cursor: 'pointer', color: 'var(--text-secondary)' 
@@ -173,24 +225,49 @@ export default function JobBoard({ isAdmin }) {
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem' }}>
+            <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem', textAlign: 'center' }}>
               {userApplications.has(selectedJob.id) ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '1.5rem' }}>✅</span>
-                  <div>
-                    <div style={{ fontWeight: 600, color: '#065f46' }}>You have applied for this job</div>
-                    <div style={{ fontSize: '0.875rem', color: '#10b981' }}>Check "My Applications" to view or update your resume</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', justifyContent: 'center' }}>
+                  <CheckCircle size={24} color="#059669" />
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 600, color: '#065f46' }}>Application Submitted</div>
+                    <div style={{ fontSize: '0.875rem', color: '#10b981' }}>Check "My Applications" for updates</div>
                   </div>
                 </div>
               ) : (
-                <button 
-                  onClick={() => handleApply(selectedJob)} 
-                  className="btn btn-primary" 
-                  style={{ width: '100%', fontSize: '1.1rem', padding: '1rem' }}
-                  disabled={applying === selectedJob.id}
-                >
-                  {applying === selectedJob.id ? 'Applying...' : 'Apply Now'} <LinkIcon size={20} />
-                </button>
+                <div>
+                  <h4 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>Apply Now</h4>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                    Please upload your resume to proceed with the application. Supported formats: PDF, DOC, DOCX.
+                  </p>
+                  
+                  <input 
+                    type="file" 
+                    id="resume-upload" 
+                    style={{ display: 'none' }}
+                    onChange={(e) => handleFileUploadAndApply(e, selectedJob)}
+                    accept=".pdf,.doc,.docx"
+                    disabled={applying === selectedJob.id}
+                  />
+                  <label 
+                    htmlFor="resume-upload" 
+                    className="btn btn-primary"
+                    style={{ 
+                      width: '100%', 
+                      fontSize: '1.1rem', 
+                      padding: '1rem',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      cursor: applying === selectedJob.id ? 'not-allowed' : 'pointer',
+                      opacity: applying === selectedJob.id ? 0.7 : 1
+                    }}
+                  >
+                    {applying === selectedJob.id ? 'Uploading & Applying...' : 'Upload Resume & Apply'} 
+                    <UploadCloud size={20} />
+                  </label>
+                </div>
               )}
             </div>
           </div>

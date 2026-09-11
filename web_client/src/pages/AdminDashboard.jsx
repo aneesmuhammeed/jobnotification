@@ -65,7 +65,6 @@ export default function AdminDashboard() {
           job_title: formData.job_title,
           description: formData.description,
           application_urls: validUrls,
-          application_url: validUrls.length > 0 ? validUrls[0] : '', // Fallback for DB constraint
           last_date: formData.last_date,
           created_by: session.user.id
         }
