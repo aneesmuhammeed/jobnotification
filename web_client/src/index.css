@@ -256,6 +256,33 @@ h1, h2, h3, h4, h5, h6, .heading-1, .heading-2, .navbar {
   border: 1px solid var(--glass-border);
 }
 
+.modal-grid > div {
+  background: var(--glass-bg);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+}
+
+.spinner {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 2px solid #fff;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+.spinner-primary {
+  border: 2px solid rgba(37, 99, 235, 0.2);
+  border-top: 2px solid var(--primary-color);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 @media (min-width: 640px) {
   .modal-grid {
     grid-template-columns: 1fr 1fr;

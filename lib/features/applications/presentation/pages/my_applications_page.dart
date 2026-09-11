@@ -25,6 +25,7 @@ class MyApplicationsPage extends StatefulWidget {
 
 class _MyApplicationsPageState extends State<MyApplicationsPage> {
   List<ApplicationEntity> _applications = [];
+  String? _downloadingId;
 
   @override
   void initState() {
@@ -86,22 +87,33 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   }
 
                   if (state is DocumentDownloadInProgress) {
-                    // Show a quick loading indicator without breaking the list view
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Downloading document...'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
+                      if (mounted) {
+                        setState(() {
+                          _downloadingId = state.fileId;
+                        });
+                      }
                     });
                   }
 
                   if (state is DocumentDownloaded) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) return;
-                      OpenFilex.open(state.localFilePath);
+                      if (mounted) {
+                        setState(() {
+                          _downloadingId = null;
+                        });
+                        OpenFilex.open(state.localFilePath);
+                      }
+                    });
+                  }
+                  
+                  if (state is ApplicationError) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() {
+                          _downloadingId = null;
+                        });
+                      }
                     });
                   }
 
@@ -135,6 +147,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                       itemBuilder: (context, index) {
                         return _ApplicationCard(
                           application: _applications[index],
+                          isDownloading: _downloadingId == _applications[index].documentPath,
                           onOpenDocument: _openDocument,
                         );
                       },
@@ -157,11 +170,13 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
 class _ApplicationCard extends StatelessWidget {
   final ApplicationEntity application;
+  final bool isDownloading;
   final void Function(String, String) onOpenDocument;
 
   const _ApplicationCard({
     required this.application,
     required this.onOpenDocument,
+    this.isDownloading = false,
   });
 
   @override
@@ -266,7 +281,7 @@ class _ApplicationCard extends StatelessWidget {
               if (application.hasDocument) ...[
                 const SizedBox(height: AppSpacing.sm),
                 InkWell(
-                  onTap: () => onOpenDocument(application.documentPath!, application.documentName ?? 'Document.pdf'),
+                  onTap: isDownloading ? null : () => onOpenDocument(application.documentPath!, application.documentName ?? 'Document.pdf'),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -280,12 +295,17 @@ class _ApplicationCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.description_outlined,
-                            size: 14, color: AppColors.accent),
+                        isDownloading 
+                            ? const SizedBox(
+                                width: 14, 
+                                height: 14, 
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent)
+                              )
+                            : const Icon(Icons.description_outlined, size: 14, color: AppColors.accent),
                         const SizedBox(width: AppSpacing.xs),
                         Flexible(
                           child: Text(
-                            application.documentName ?? 'Document',
+                            isDownloading ? 'Downloading...' : (application.documentName ?? 'Document'),
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: AppColors.accent,
                                 ),

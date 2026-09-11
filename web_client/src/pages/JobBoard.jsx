@@ -7,6 +7,7 @@ export default function JobBoard({ isAdmin }) {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState(null)
+  const [downloadingId, setDownloadingId] = useState(null)
   const [applicationsMap, setApplicationsMap] = useState({})
   const [selectedJob, setSelectedJob] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -108,8 +109,44 @@ export default function JobBoard({ isAdmin }) {
     }
   }
 
+  const handleApplyWithoutResume = async (job) => {
+    setApplying(job.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const { error } = await supabase.from('applications').insert([
+        {
+          user_id: session.user.id,
+          job_id: job.id,
+        }
+      ])
+      
+      if (!error) {
+        setApplicationsMap(prev => ({
+          ...prev,
+          [job.id]: {
+            job_id: job.id,
+          }
+        }))
+        const primaryUrl = (job.application_urls && job.application_urls.length > 0) 
+          ? job.application_urls[0] 
+          : null
+        if (primaryUrl) {
+          window.open(primaryUrl, '_blank')
+        }
+      } else {
+        alert("Error applying: " + error.message)
+      }
+    } catch (err) {
+      alert("Error: " + err.message)
+    } finally {
+      setApplying(null)
+    }
+  }
+
   const handleDownloadResume = async (application) => {
     if (!application?.document_path) return
+    setDownloadingId(application.job_id)
     try {
       const botToken = '8107955995:AAGoc6EAjGRsWbXqDqAsdwX25hXd_zttw08'
       const response = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${application.document_path}`)
@@ -132,6 +169,8 @@ export default function JobBoard({ isAdmin }) {
       }
     } catch (err) {
       alert("Error downloading resume: " + err.message)
+    } finally {
+      setDownloadingId(null)
     }
   }
 
@@ -226,11 +265,15 @@ export default function JobBoard({ isAdmin }) {
                 <button 
                   onClick={() => handleDownloadResume(applicationsMap[job.id])}
                   className="btn" 
-                  style={{ width: '100%', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }} 
-                  disabled={!applicationsMap[job.id]?.document_path}
+                  style={{ width: '100%', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', display: 'flex', justifyContent: 'center', alignItems: 'center' }} 
+                  disabled={!applicationsMap[job.id]?.document_path || downloadingId === job.id}
                 >
-                  <DownloadCloud size={16} style={{ marginRight: '0.5rem' }} /> 
-                  {applicationsMap[job.id]?.document_path ? 'Download Resume' : 'No Resume Attached'}
+                  {downloadingId === job.id ? (
+                    <span className="spinner spinner-primary" style={{ marginRight: '0.5rem' }}></span>
+                  ) : (
+                    <DownloadCloud size={16} style={{ marginRight: '0.5rem' }} /> 
+                  )}
+                  {applicationsMap[job.id]?.document_path ? (downloadingId === job.id ? 'Downloading...' : 'Download Resume') : 'No Resume Attached'}
                 </button>
               ) : (
                 <button 
@@ -308,11 +351,15 @@ export default function JobBoard({ isAdmin }) {
                   <button 
                     onClick={() => handleDownloadResume(applicationsMap[selectedJob.id])}
                     className="btn btn-primary"
-                    style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
-                    disabled={!applicationsMap[selectedJob.id]?.document_path}
+                    style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                    disabled={!applicationsMap[selectedJob.id]?.document_path || downloadingId === selectedJob.id}
                   >
-                    <DownloadCloud size={20} />
-                    {applicationsMap[selectedJob.id]?.document_path ? 'Download Submitted Resume' : 'No Resume Attached'}
+                    {downloadingId === selectedJob.id ? (
+                      <span className="spinner"></span>
+                    ) : (
+                      <DownloadCloud size={20} />
+                    )}
+                    {applicationsMap[selectedJob.id]?.document_path ? (downloadingId === selectedJob.id ? 'Downloading...' : 'Download Submitted Resume') : 'No Resume Attached'}
                   </button>
                 </div>
               ) : (
@@ -322,32 +369,64 @@ export default function JobBoard({ isAdmin }) {
                     Please upload your resume to proceed with the application. Supported formats: PDF, DOC, DOCX.
                   </p>
                   
-                  <input 
-                    type="file" 
-                    id="resume-upload" 
-                    style={{ display: 'none' }}
-                    onChange={(e) => handleFileUploadAndApply(e, selectedJob)}
-                    accept=".pdf,.doc,.docx"
-                    disabled={applying === selectedJob.id}
-                  />
-                  <label 
-                    htmlFor="resume-upload" 
-                    className="btn btn-primary"
-                    style={{ 
-                      width: '100%', 
-                      fontSize: '1.1rem', 
-                      padding: '1rem',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      cursor: applying === selectedJob.id ? 'not-allowed' : 'pointer',
-                      opacity: applying === selectedJob.id ? 0.7 : 1
-                    }}
-                  >
-                    {applying === selectedJob.id ? 'Uploading & Applying...' : 'Upload Resume & Apply'} 
-                    <UploadCloud size={20} />
-                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <input 
+                      type="file" 
+                      id="resume-upload" 
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleFileUploadAndApply(e, selectedJob)}
+                      accept=".pdf,.doc,.docx"
+                      disabled={applying === selectedJob.id}
+                    />
+                    <label 
+                      htmlFor="resume-upload" 
+                      className="btn btn-primary"
+                      style={{ 
+                        width: '100%', 
+                        fontSize: '1.1rem', 
+                        padding: '1rem',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        cursor: applying === selectedJob.id ? 'not-allowed' : 'pointer',
+                        opacity: applying === selectedJob.id ? 0.7 : 1
+                      }}
+                    >
+                      {applying === selectedJob.id ? (
+                        <><span className="spinner"></span> Uploading & Applying...</>
+                      ) : (
+                        <><UploadCloud size={20} /> Upload Resume & Apply</>
+                      )}
+                    </label>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '0.5rem 0' }}>
+                      <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--glass-border)' }}></div>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>OR</span>
+                      <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--glass-border)' }}></div>
+                    </div>
+
+                    <button 
+                      onClick={() => handleApplyWithoutResume(selectedJob)}
+                      className="btn btn-outline"
+                      style={{ 
+                        width: '100%', 
+                        fontSize: '1.1rem', 
+                        padding: '1rem',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                      }}
+                      disabled={applying === selectedJob.id}
+                    >
+                      {applying === selectedJob.id ? (
+                        <><span className="spinner spinner-primary"></span> Applying...</>
+                      ) : (
+                        <><CheckCircle size={20} /> Mark as Applied (No Resume)</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

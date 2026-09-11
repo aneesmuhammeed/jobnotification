@@ -33,6 +33,8 @@ class JobDetailsPage extends StatefulWidget {
 class _JobDetailsPageState extends State<JobDetailsPage> {
   ApplicationEntity? _application;
   bool _checkingStatus = true;
+  bool _isApplying = false;
+  bool _isDownloading = false;
 
   @override
   void initState() {
@@ -100,6 +102,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
               if (state is ApplicationMarked) {
                 setState(() {
                   _application = state.application;
+                  _isApplying = false;
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -108,7 +111,16 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   ),
                 );
               }
+              if (state is ApplicationMarkingInProgress) {
+                setState(() {
+                  _isApplying = true;
+                });
+              }
               if (state is ApplicationError) {
+                setState(() {
+                  _isApplying = false;
+                  _isDownloading = false;
+                });
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.message),
@@ -117,14 +129,14 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                 );
               }
               if (state is DocumentDownloadInProgress) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Downloading document...'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
+                setState(() {
+                  _isDownloading = true;
+                });
               }
               if (state is DocumentDownloaded) {
+                setState(() {
+                  _isDownloading = false;
+                });
                 OpenFilex.open(state.localFilePath);
               }
             },
@@ -297,15 +309,20 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   if (_application!.hasDocument) ...[
                     const SizedBox(height: AppSpacing.sm),
                     InkWell(
-                      onTap: () => _openDocument(_application!.documentPath!, _application!.documentName ?? 'Document.pdf'),
+                      onTap: _isDownloading ? null : () => _openDocument(_application!.documentPath!, _application!.documentName ?? 'Document.pdf'),
                       child: Row(
                         children: [
-                          const Icon(Icons.description_outlined,
-                              size: 16, color: AppColors.accent),
+                          _isDownloading 
+                            ? const SizedBox(
+                                width: 16, 
+                                height: 16, 
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent)
+                              )
+                            : const Icon(Icons.description_outlined, size: 16, color: AppColors.accent),
                           const SizedBox(width: AppSpacing.xs),
                           Expanded(
                             child: Text(
-                              _application!.documentName ?? 'Document',
+                              _isDownloading ? 'Downloading...' : (_application!.documentName ?? 'Document'),
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: AppColors.accent,
                                     decoration: TextDecoration.underline,
@@ -335,9 +352,10 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   )),
             const SizedBox(height: AppSpacing.md),
             SecondaryButton(
-              text: 'Mark as Applied',
+              text: _isApplying ? 'Applying...' : 'Mark as Applied',
               icon: Icons.check_circle_outline,
               onPressed: _markAsApplied,
+              isLoading: _isApplying,
             ),
           ],
         ],
