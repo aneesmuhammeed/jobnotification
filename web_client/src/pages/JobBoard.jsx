@@ -54,8 +54,13 @@ export default function JobBoard({ isAdmin }) {
     
     if (!error) {
       setUserApplications(prev => new Set(prev).add(job.id))
-      // Open the external URL
-      window.open(job.application_url, '_blank')
+      // Open the primary URL
+      const primaryUrl = (job.application_urls && job.application_urls.length > 0) 
+        ? job.application_urls[0] 
+        : job.application_url
+      if (primaryUrl) {
+        window.open(primaryUrl, '_blank')
+      }
     } else {
       alert("Error applying: " + error.message)
     }
@@ -149,10 +154,22 @@ export default function JobBoard({ isAdmin }) {
                 <div style={{ fontWeight: 500 }}>{new Date(selectedJob.last_date).toLocaleDateString()}</div>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Application Link</strong>
-                <a href={selectedJob.application_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', wordBreak: 'break-all' }}>
-                  {selectedJob.application_url}
-                </a>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Application Links</strong>
+                {selectedJob.application_urls && selectedJob.application_urls.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {selectedJob.application_urls.map((url, idx) => (
+                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <LinkIcon size={14} /> {url}
+                      </a>
+                    ))}
+                  </div>
+                ) : selectedJob.application_url ? (
+                  <a href={selectedJob.application_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <LinkIcon size={14} /> {selectedJob.application_url}
+                  </a>
+                ) : (
+                  <span className="text-muted">No link provided</span>
+                )}
               </div>
             </div>
 

@@ -54,7 +54,7 @@ export default function Auth() {
           {isLogin ? 'Welcome Back' : 'Create Account'}
         </h1>
         {errorMsg && (
-          <div style={{ backgroundColor: '#fee2e2', color: '#ef4444', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.875rem' }}>
+          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
             {errorMsg}
           </div>
         )}

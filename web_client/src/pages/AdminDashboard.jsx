@@ -9,61 +9,104 @@ export default function AdminDashboard() {
     company_name: '',
     job_title: '',
     description: '',
-    application_url: '',
+    application_urls: [''],
     last_date: ''
   })
+
+  const fetchJobs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      if (data) setJobs(data)
+    } catch (err) {
+      console.error("Error fetching jobs:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     fetchJobs()
   }, [])
 
-  const fetchJobs = async () => {
-    const { data } = await supabase
-      .from('jobs')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (data) setJobs(data)
-    setLoading(false)
-  }
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
+  const handleUrlChange = (index, value) => {
+    const newUrls = [...formData.application_urls]
+    newUrls[index] = value
+    setFormData({ ...formData, application_urls: newUrls })
+  }
+
+  const addUrlField = () => {
+    setFormData({ ...formData, application_urls: [...formData.application_urls, ''] })
+  }
+
+  const removeUrlField = (index) => {
+    const newUrls = formData.application_urls.filter((_, i) => i !== index)
+    setFormData({ ...formData, application_urls: newUrls })
+  }
+
   const handleCreateJob = async (e) => {
     e.preventDefault()
+    setLoading(true)
     const { data: { session } } = await supabase.auth.getSession()
     
-    const { error } = await supabase.from('jobs').insert([
-      {
-        ...formData,
-        created_by: session.user.id
-      }
-    ])
+    const validUrls = formData.application_urls.filter(url => url.trim() !== '')
 
-    if (error) {
-      alert("Error creating job: " + error.message)
-    } else {
+    try {
+      const { error } = await supabase.from('jobs').insert([
+        {
+          company_name: formData.company_name,
+          job_title: formData.job_title,
+          description: formData.description,
+          application_urls: validUrls,
+          application_url: validUrls.length > 0 ? validUrls[0] : '', // Fallback for DB constraint
+          last_date: formData.last_date,
+          created_by: session.user.id
+        }
+      ])
+
+      if (error) throw error
+      
+      alert("Job posted successfully!")
       setFormData({
         company_name: '',
         job_title: '',
         description: '',
-        application_url: '',
+        application_urls: [''],
         last_date: ''
       })
       fetchJobs()
+    } catch (err) {
+      alert("Error creating job: " + err.message)
+      setLoading(false)
     }
   }
 
   const toggleJobActive = async (id, currentStatus) => {
-    await supabase.from('jobs').update({ is_active: !currentStatus }).eq('id', id)
-    fetchJobs()
+    try {
+      const { error } = await supabase.from('jobs').update({ is_active: !currentStatus }).eq('id', id)
+      if (error) throw error
+      fetchJobs()
+    } catch (err) {
+      alert("Error updating status: " + err.message)
+    }
   }
 
   const deleteJob = async (id) => {
     if(confirm("Are you sure you want to delete this job?")) {
-      await supabase.from('jobs').delete().eq('id', id)
-      fetchJobs()
+      try {
+        const { error } = await supabase.from('jobs').delete().eq('id', id)
+        if (error) throw error
+        fetchJobs()
+      } catch (err) {
+        alert("Error deleting job: " + err.message)
+      }
     }
   }
 
@@ -86,9 +129,28 @@ export default function AdminDashboard() {
             <label className="form-label">Description</label>
             <textarea name="description" value={formData.description} onChange={handleChange} className="form-input" rows="3" required></textarea>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Application URL</label>
-            <input type="url" name="application_url" value={formData.application_url} onChange={handleChange} className="form-input" required />
+          <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+            <label className="form-label">Application URLs</label>
+            {formData.application_urls.map((url, index) => (
+              <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input 
+                  type="url" 
+                  value={url} 
+                  onChange={(e) => handleUrlChange(index, e.target.value)} 
+                  className="form-input" 
+                  placeholder="https://example.com/apply"
+                  required={index === 0} 
+                />
+                {formData.application_urls.length > 1 && (
+                  <button type="button" onClick={() => removeUrlField(index)} className="btn btn-outline" style={{ padding: '0 0.75rem', borderColor: '#ef4444', color: '#ef4444' }}>
+                    &times;
+                  </button>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={addUrlField} className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', marginTop: '0.25rem' }}>
+              + Add another link
+            </button>
           </div>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Last Date</label>
@@ -101,38 +163,39 @@ export default function AdminDashboard() {
       </div>
 
       <h2 className="heading-2" style={{ fontSize: '1.25rem' }}>Manage Existing Jobs</h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--card-shadow)' }}>
-          <thead style={{ backgroundColor: '#f1f5f9' }}>
+      <div className="glass-panel" style={{ overflowX: 'auto', padding: '0' }}>
+        <table>
+          <thead>
             <tr>
-              <th style={{ padding: '1rem', textAlign: 'left' }}>Company</th>
-              <th style={{ padding: '1rem', textAlign: 'left' }}>Title</th>
-              <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
-              <th style={{ padding: '1rem', textAlign: 'left' }}>Actions</th>
+              <th>Company</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {jobs.map(job => (
-              <tr key={job.id} style={{ borderTop: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '1rem' }}>{job.company_name}</td>
-                <td style={{ padding: '1rem' }}>{job.job_title}</td>
-                <td style={{ padding: '1rem' }}>
+              <tr key={job.id}>
+                <td>{job.company_name}</td>
+                <td>{job.job_title}</td>
+                <td>
                   <span style={{ 
-                    padding: '0.25rem 0.5rem', 
+                    padding: '0.25rem 0.75rem', 
                     borderRadius: '999px', 
                     fontSize: '0.75rem',
                     fontWeight: 600,
-                    backgroundColor: job.is_active ? '#dcfce7' : '#fee2e2',
-                    color: job.is_active ? '#166534' : '#991b1b'
+                    backgroundColor: job.is_active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: job.is_active ? '#34d399' : '#f87171',
+                    border: job.is_active ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
                   }}>
                     {job.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => toggleJobActive(job.id, job.is_active)} className="btn btn-outline" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
+                <td style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => toggleJobActive(job.id, job.is_active)} className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
                     Toggle Status
                   </button>
-                  <button onClick={() => deleteJob(job.id)} className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#ef4444', color: 'white', border: 'none' }}>
+                  <button onClick={() => deleteJob(job.id)} className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                     Delete
                   </button>
                 </td>

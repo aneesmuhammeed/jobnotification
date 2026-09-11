@@ -186,29 +186,41 @@ export default function MyApplications() {
                 <div style={{ fontWeight: 500 }}>{new Date(selectedApp.job?.last_date).toLocaleDateString()}</div>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Application Link</strong>
-                <a href={selectedApp.job?.application_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', wordBreak: 'break-all' }}>
-                  {selectedApp.job?.application_url}
-                </a>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Application Links</strong>
+                {selectedApp.job?.application_urls && selectedApp.job?.application_urls.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {selectedApp.job?.application_urls.map((url, idx) => (
+                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', wordBreak: 'break-all' }}>
+                        {url}
+                      </a>
+                    ))}
+                  </div>
+                ) : selectedApp.job?.application_url ? (
+                  <a href={selectedApp.job?.application_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', wordBreak: 'break-all' }}>
+                    {selectedApp.job?.application_url}
+                  </a>
+                ) : (
+                  <span className="text-muted">No link provided</span>
+                )}
               </div>
             </div>
 
             <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem' }}>
               <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 600 }}>Uploaded Resume</h3>
               {selectedApp.document_name ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.3)', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '1.5rem' }}>📄</span>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#1e40af', wordBreak: 'break-all' }}>{selectedApp.document_name}</div>
-                    <div style={{ fontSize: '0.875rem', color: '#3b82f6' }}>Successfully uploaded</div>
+                    <div style={{ fontWeight: 600, color: '#93c5fd', wordBreak: 'break-all' }}>{selectedApp.document_name}</div>
+                    <div style={{ fontSize: '0.875rem', color: '#60a5fa' }}>Successfully uploaded</div>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '1.5rem' }}>⚠️</span>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#991b1b' }}>No resume attached</div>
-                    <div style={{ fontSize: '0.875rem', color: '#ef4444' }}>Please upload your resume to complete the application</div>
+                    <div style={{ fontWeight: 600, color: '#fca5a5' }}>No resume attached</div>
+                    <div style={{ fontSize: '0.875rem', color: '#f87171' }}>Please upload your resume to complete the application</div>
                   </div>
                 </div>
               )}
