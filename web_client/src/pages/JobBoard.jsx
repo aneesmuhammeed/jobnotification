@@ -118,13 +118,15 @@ export default function JobBoard({ isAdmin }) {
       if (data.ok) {
         const filePath = data.result.file_path
         const downloadUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`
-        const a = document.createElement('a')
-        a.href = downloadUrl
-        a.download = application.document_name || 'Resume'
-        a.target = '_blank'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        
+        // Attempt to open in a new tab first
+        const newWindow = window.open(downloadUrl, '_blank')
+        
+        // On iOS Safari, async window.open is often blocked by the popup blocker.
+        // If it was blocked, newWindow will be null, so we fallback to redirecting the current tab.
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          window.location.href = downloadUrl
+        }
       } else {
         alert("Failed to get file from Telegram")
       }
